@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Redis with Password (for BullMQ Queue)
+  redis:
+    image: redis:7-alpine
+    container_name: kurser-redis
+    restart: unless-stopped
+    command: redis-server --requirepass kurser_redis_pass_2024 --appendonly yes
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kurser-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--pass", "kurser_redis_pass_2024", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main Backend API
+  main:
+    build:
+      context: ./main
+      dockerfile: Dockerfile
+    container_name: kurser-main
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kurser_redis_pass_2024
+    env_file:
+      - ./main/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kurser-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Worker Service (processes queue jobs - scalable)
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: kurser_redis_pass_2024
+      WORKER_CONCURRENCY: 5
+      CLONE_DIR: /tmp/kurser-repos
+      MAIN_API_URL: http://main:3000
+    env_file:
+      - ./worker/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      main:
+        condition: service_started
+    volumes:
+      - worker_repos:/tmp/kurser-repos
+    networks:
+      - kurser-network
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+volumes:
+  redis_data:
+  worker_repos:
+
+networks:
+  kurser-network:
+    driver: bridge
