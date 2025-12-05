@@ -94,8 +94,6 @@ export const deploymentQueue = new Queue(QUEUE_NAMES.DEPLOYMENTS, {
     },
   },
 });
-  },
-});
 
 // Queue events for monitoring
 export const webhookQueueEvents = new QueueEvents(QUEUE_NAMES.WEBHOOK_EVENTS, {

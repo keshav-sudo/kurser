@@ -35,7 +35,8 @@ export class GitService {
       if (exists) {
         console.log(`📥 Pulling latest changes for ${this.repoPath}`);
         const git = simpleGit(this.repoPath);
-        await git.pull();
+        await git.fetch(['--all']);
+        await git.reset(['--hard', 'origin/HEAD']);
       } else {
         console.log(`📦 Cloning repository to ${this.repoPath}`);
         await this.git.clone(authenticatedUrl, this.repoPath, {

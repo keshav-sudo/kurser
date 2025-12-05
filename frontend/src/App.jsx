@@ -142,13 +142,22 @@ function App() {
   }
 
   const handleLogout = () => {
+    // Clear all state and storage
+    localStorage.clear()
+    sessionStorage.clear()
+    
+    // Reset all state
     setToken('')
     setUser(null)
     setRepos([])
     setTrackedRepos([])
     setWebhookEvents([])
-    localStorage.removeItem('token')
-    showMessage('Logged out successfully!')
+    setSelectedRepo('')
+    setSelectedRepoId('')
+    setMessage('')
+    
+    // Show logout message
+    showMessage('Logged out successfully. Click "Login with GitHub" to sign in again.')
   }
 
   const checkHealth = async () => {

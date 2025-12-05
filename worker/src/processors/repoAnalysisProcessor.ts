@@ -51,7 +51,7 @@ export async function processRepoAnalysis(job: Job) {
     if (await isFrontendProject(gitService, projectType)) {
       console.log('🚀 Detected frontend project, attempting to build and deploy...');
       try {
-        deploymentUrl = await buildAndDeploy(repoPath, projectType);
+        deploymentUrl = await buildAndDeploy(repoPath, projectType, repoFullName);
         console.log(`✅ Deployment successful: ${deploymentUrl}`);
       } catch (deployError: any) {
         console.error(`❌ Deployment failed: ${deployError.message}`);
@@ -147,7 +147,7 @@ async function isFrontendProject(gitService: GitService, projectType: string): P
   return hasPublicFolder || hasIndexHtml || hasViteConfig || hasWebpackConfig;
 }
 
-async function buildAndDeploy(repoPath: string, projectType: string): Promise<string> {
+async function buildAndDeploy(repoPath: string, projectType: string, repoFullName: string): Promise<string> {
   console.log(`📦 Building project at: ${repoPath}`);
 
   try {
@@ -174,46 +174,77 @@ async function buildAndDeploy(repoPath: string, projectType: string): Promise<st
     );
     console.log('Nixpacks plan:', planOutput);
 
-    // Install dependencies - try multiple approaches
+    // Install dependencies - ALWAYS use npm install (NOT npm ci)
+    // npm ci skips devDependencies in production mode which breaks build tools like vite
     console.log('📥 Installing dependencies...');
     let installSuccess = false;
     
-    // Try 1: Check for lock file and use npm ci
+    // Try 1: npm install --include=dev --force (most reliable)
     try {
-      const lockFilePath = path.join(repoPath, 'package-lock.json');
-      await fs.access(lockFilePath);
-      console.log('Found package-lock.json, using npm ci...');
-      await execAsync('npm ci --legacy-peer-deps', { cwd: repoPath, timeout: 300000 });
+      console.log('Using npm install --include=dev --force for reliable devDependencies install...');
+      await execAsync('npm install --include=dev --force', { 
+        cwd: repoPath, 
+        timeout: 300000,
+        env: {
+          ...process.env,
+          NODE_ENV: undefined,  // Don't set production during install
+          NPM_CONFIG_PRODUCTION: 'false'  // Ensure devDependencies are installed
+        }
+      });
       installSuccess = true;
     } catch (e) {
-      console.log('npm ci failed or no lock file, trying npm install...');
+      console.log('npm install --include=dev --force failed, trying without --force...');
     }
     
-    // Try 2: npm install with legacy-peer-deps
+    // Try 2: npm install with --include=dev
     if (!installSuccess) {
       try {
-        await execAsync('npm install --legacy-peer-deps', { cwd: repoPath, timeout: 300000 });
+        await execAsync('npm install --include=dev', { 
+          cwd: repoPath, 
+          timeout: 300000,
+          env: {
+            ...process.env,
+            NODE_ENV: undefined,
+            NPM_CONFIG_PRODUCTION: 'false'
+          }
+        });
         installSuccess = true;
       } catch (e) {
-        console.log('npm install --legacy-peer-deps failed, trying with --force...');
+        console.log('npm install --include=dev failed, trying with --legacy-peer-deps...');
       }
     }
     
-    // Try 3: npm install with --force (overrides all conflicts)
+    // Try 3: npm install with --legacy-peer-deps
     if (!installSuccess) {
-      console.log('Using npm install --force to resolve conflicts...');
-      await execAsync('npm install --force', { cwd: repoPath, timeout: 300000 });
+      console.log('Using npm install --legacy-peer-deps as fallback...');
+      await execAsync('npm install --legacy-peer-deps --include=dev', { 
+        cwd: repoPath, 
+        timeout: 300000,
+        env: {
+          ...process.env,
+          NODE_ENV: undefined,
+          NPM_CONFIG_PRODUCTION: 'false'
+        }
+      });
       installSuccess = true;
     }
 
-    console.log('✅ Dependencies installed successfully');
+    console.log('✅ Dependencies installed successfully (including devDependencies)');
+
+    // Fix Vite config to use relative base path for Azure nested deployments
+    console.log('🔧 Checking Vite configuration...');
+    await fixViteBasePathIfNeeded(repoPath);
 
     // Build using npm (guided by Nixpacks plan but executed directly)
     console.log('🔨 Building project...');
     const { stdout, stderr } = await execAsync('npm run build', { 
       cwd: repoPath, 
       timeout: 300000,
-      env: { ...process.env, NODE_ENV: 'production' }
+      env: { 
+        ...process.env, 
+        NODE_ENV: 'production',
+        PATH: `${repoPath}/node_modules/.bin:${process.env.PATH}`  // Ensure local binaries are in PATH
+      }
     });
     
     if (stdout) console.log('Build output:', stdout.substring(0, 500));
@@ -228,7 +259,7 @@ async function buildAndDeploy(repoPath: string, projectType: string): Promise<st
     const azureConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     if (azureConnectionString) {
       console.log('☁️  Deploying to Azure Blob Storage...');
-      const deploymentUrl = await deployToAzure(distDir);
+      const deploymentUrl = await deployToAzure(distDir, repoFullName);
       return deploymentUrl;
     } else {
       console.log('⚠️  Azure Storage not configured, skipping deployment');
@@ -283,7 +314,7 @@ async function findDistDirectory(repoPath: string): Promise<string> {
   throw new Error('Could not find build output directory');
 }
 
-async function deployToAzure(distDir: string): Promise<string> {
+async function deployToAzure(distDir: string, repoFullName: string): Promise<string> {
   const { BlobServiceClient } = await import('@azure/storage-blob');
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
   const containerName = '$web';
@@ -294,13 +325,21 @@ async function deployToAzure(distDir: string): Promise<string> {
   // Ensure container exists
   await containerClient.createIfNotExists({ access: 'blob' });
   
+  // Create nested folder structure: username/repo-name/
+  const [username, repoName] = repoFullName.split('/');
+  const azurePrefix = `${username}/${repoName}`;
+  
+  console.log(`📂 Deploying to nested path: ${azurePrefix}/`);
+  
   // Upload all files
   const files = await getAllFiles(distDir);
   console.log(`📤 Uploading ${files.length} files to Azure...`);
   
+  let uploadedCount = 0;
   for (const filePath of files) {
     const relativePath = path.relative(distDir, filePath);
-    const blobName = relativePath.replace(/\\/g, '/');
+    // Add username/repo-name prefix to blob path
+    const blobName = `${azurePrefix}/${relativePath}`.replace(/\\/g, '/');
     
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
     const contentType = getContentType(filePath);
@@ -308,16 +347,30 @@ async function deployToAzure(distDir: string): Promise<string> {
     await blockBlobClient.uploadFile(filePath, {
       blobHTTPHeaders: { blobContentType: contentType }
     });
+    
+    uploadedCount++;
+    if (uploadedCount % 10 === 0) {
+      console.log(`  📤 Uploaded ${uploadedCount}/${files.length} files`);
+    }
   }
   
   console.log(`✅ Uploaded ${files.length} files to Azure Blob Storage`);
   
-  // Return the Azure blob URL (accessible immediately)
+  // Return multiple URL formats for easy access
   const accountName = blobServiceClient.accountName;
-  const blobUrl = `https://${accountName}.blob.core.windows.net/$web/index.html`;
-  console.log(`🌐 Deployment URL: ${blobUrl}`);
   
-  return blobUrl;
+  // URL 1: Static website URL (if enabled) - cleaner but needs static website feature
+  const staticWebUrl = `https://${accountName}.z13.web.core.windows.net/${azurePrefix}/`;
+  
+  // URL 2: Direct blob URL - always works
+  const directBlobUrl = `https://${accountName}.blob.core.windows.net/$web/${azurePrefix}/index.html`;
+  
+  console.log(`🌐 Deployment URLs:`);
+  console.log(`   Static Website: ${staticWebUrl}`);
+  console.log(`   Direct Blob: ${directBlobUrl}`);
+  
+  // Return the direct blob URL as primary (since it's working)
+  return directBlobUrl;
 }
 
 async function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): Promise<string[]> {
@@ -357,4 +410,71 @@ function getContentType(filePath: string): string {
   };
   
   return contentTypes[ext] || 'application/octet-stream';
+}
+
+/**
+ * Fix Vite config to use relative base path for nested Azure deployments
+ * This ensures assets load correctly from username/repo-name/ paths
+ */
+async function fixViteBasePathIfNeeded(repoPath: string): Promise<void> {
+  const viteConfigJS = path.join(repoPath, 'vite.config.js');
+  const viteConfigTS = path.join(repoPath, 'vite.config.ts');
+  
+  let configFile: string | null = null;
+  
+  try {
+    await fs.access(viteConfigJS);
+    configFile = viteConfigJS;
+    console.log('   Found vite.config.js');
+  } catch {
+    try {
+      await fs.access(viteConfigTS);
+      configFile = viteConfigTS;
+      console.log('   Found vite.config.ts');
+    } catch {
+      console.log('   No Vite config found, skipping base path fix');
+      return;
+    }
+  }
+  
+  // Read current config
+  const configContent = await fs.readFile(configFile, 'utf-8');
+  
+  // Check if base is already set correctly
+  if (configContent.includes("base: './'") || configContent.includes('base: "./"')) {
+    console.log('   ✅ Vite base path already set to relative');
+    return;
+  }
+  
+  // Check if base is set to something else
+  if (configContent.includes('base:')) {
+    console.log('   ⚠️  Vite base path is set but not to relative - updating...');
+    // Replace existing base with relative
+    const updatedConfig = configContent.replace(/base:\s*['"][^'"]*['"]/g, "base: './'");
+    await fs.writeFile(configFile, updatedConfig, 'utf-8');
+    console.log('   ✅ Updated Vite base path to relative');
+    return;
+  }
+  
+  // Need to add base property
+  console.log('   🔧 Adding relative base path to Vite config...');
+  
+  // Try to insert base property after plugins array
+  if (configContent.includes('plugins:')) {
+    // Find the closing of plugins array and insert base after it
+    const updatedConfig = configContent.replace(
+      /(plugins:\s*\[[^\]]*\])/,
+      "$1,\n  base: './' // Added by Kurser for Azure nested paths"
+    );
+    await fs.writeFile(configFile, updatedConfig, 'utf-8');
+    console.log('   ✅ Added relative base path to Vite config');
+  } else {
+    // Just append to the config object
+    const updatedConfig = configContent.replace(
+      /export default defineConfig\(\{/,
+      "export default defineConfig({\n  base: './', // Added by Kurser for Azure nested paths"
+    );
+    await fs.writeFile(configFile, updatedConfig, 'utf-8');
+    console.log('   ✅ Added relative base path to Vite config');
+  }
 }

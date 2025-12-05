@@ -1,305 +1,128 @@
-# Kurser - Scalable GitHub Repository Management System 🚀
+# Kurser - GitHub Repository Manager 🚀
 
-A production-ready, horizontally scalable system for tracking GitHub repositories, processing webhooks, and analyzing code with distributed workers powered by BullMQ and Redis.
+Ek modern system jo GitHub repositories ko track, analyze aur manage karta hai. Automatic webhooks, code analysis aur distributed processing ke sath.
 
-## Features ✨
+## Kya Kar Sakta Hai? ✨
 
-- 🔐 **GitHub OAuth Authentication**
-- 🪝 **Webhook Processing** - Automatic handling of push, PR, issues, and comments
-- 📦 **Repository Cloning** - Automatic git clone/pull on repository addition
-- 🔍 **Code Analysis** - Analyze repository structure, file types, and metrics
-- ⚡ **Queue-based Architecture** - BullMQ with Redis for reliable job processing
-- 📈 **Horizontal Scaling** - Scale workers independently to handle load
-- ☁️ **Azure Queue Support** - Enterprise-level queue integration
-- 🐳 **Docker Ready** - Complete Docker Compose setup
-- 🚂 **Nixpacks Support** - Deploy to Railway/Render with zero config
-- 🎯 **Production Ready** - Error handling, retries, monitoring
+- GitHub se login karo aur apni repositories dekho
+- Automatic webhook setup
+- Repository clone aur analysis
+- Real-time updates jab bhi code change ho
+- Queue-based processing (no overload)
+- Azure Blob me files store
+- Scalable architecture (jitne chahiye utne workers)
 
-## Architecture 🏗️
+## Kaise Kaam Karta Hai? 🏗️
 
 ```
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Frontend  │────────▶│   Main API   │────────▶│    Redis    │
-│  (React)    │         │  (Express)   │         │   (Queue)   │
-└─────────────┘         └──────────────┘         └─────────────┘
-                               │                        │
-                               │                        │
-                               ▼                        ▼
-                        ┌──────────────┐         ┌─────────────┐
-                        │   MongoDB    │         │  Worker(s)  │
-                        │  (Database)  │◀────────│  (BullMQ)   │
-                        └──────────────┘         └─────────────┘
-                                                        │
-                                                        ▼
-                                                  ┌─────────────┐
-                                                  │ Git Clones  │
-                                                  │  Analysis   │
-                                                  └─────────────┘
+User → Frontend → API → MongoDB (data save)
+                    ↓
+                  Redis Queue
+                    ↓
+                  Worker → Git Clone → Azure Storage
+                    ↓
+                  Analysis Complete!
 ```
 
-## Tech Stack 💻
+## Technology Stack 💻
 
-### Backend (Main API)
+**Backend:**
 - Node.js + TypeScript
-- Express.js
-- MongoDB (Mongoose)
-- BullMQ (Redis)
+- Express (API)
+- MongoDB (Database)
+- BullMQ + Redis (Queue)
 - GitHub OAuth
-- JWT Authentication
 
-### Worker Service
-- Node.js + TypeScript
-- BullMQ (Job processing)
-- Redis (Queue storage)
-- simple-git (Repository operations)
-- Azure Storage Queue (Optional)
+**Worker:**
+- Background job processing
+- Git operations
+- Azure Blob Storage
 
-### Frontend
-- React + TypeScript
-- Vite
-- TailwindCSS
-- Axios
+**Frontend:**
+- React + Vite
+- Clean UI
 
-### Infrastructure
-- Docker & Docker Compose
-- Redis 7
-- RabbitMQ (Legacy support)
-- Nixpacks (Railway/Render)
+## Local Setup (Testing) 🚀
 
-## Quick Start 🚀
-
-### Prerequisites
-
-- Node.js 18+
-- Docker & Docker Compose
-- MongoDB (Atlas or local)
-- GitHub OAuth App
-
-### 1. Clone Repository
-
+### 1. Clone karo
 ```bash
-git clone https://github.com/yourusername/kurser.git
+git clone <your-repo-url>
 cd kurser
 ```
 
-### 2. Setup Environment Variables
-
-**Main API** (`main/.env`):
+### 2. Docker se start karo
 ```bash
-cp main/.env.example main/.env
-nano main/.env
-```
-
-Required variables:
-```bash
-MONGODB_URI=your_mongodb_uri
-GITHUB_CLIENT_ID=your_client_id
-GITHUB_CLIENT_SECRET=your_client_secret
-JWT_SECRET=your_secret_key
-REDIS_HOST=redis
-REDIS_PORT=6379
-```
-
-**Worker** (`worker/.env`):
-```bash
-cp worker/.env.example worker/.env
-nano worker/.env
-```
-
-Required variables:
-```bash
-REDIS_HOST=redis
-REDIS_PORT=6379
-WORKER_CONCURRENCY=5
-MONGODB_URI=your_mongodb_uri
-```
-
-### 3. Start Services
-
-```bash
-# Start all services
 docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Check status
-docker-compose ps
 ```
 
-### 4. Access Application
+### 3. Environment variables set karo
 
-- **Frontend**: http://localhost:3001
-- **API**: http://localhost:3000
-- **Redis**: localhost:6379
-- **RabbitMQ Dashboard**: http://localhost:15672 (guest/guest)
-
-## Development Setup 💻
-
-### Local Development (Without Docker)
-
-**Terminal 1 - Redis:**
+**main/.env** file:
 ```bash
-docker run -d -p 6379:6379 redis:7-alpine
+MONGODB_URI=your_mongodb_atlas_url
+GITHUB_CLIENT_ID=your_github_app_id
+GITHUB_CLIENT_SECRET=your_github_app_secret
+JWT_SECRET=random_secret_key
+REDIS_HOST=redis
+REDIS_PORT=6379
 ```
 
-**Terminal 2 - Main API:**
+**worker/.env** file:
 ```bash
-cd main
-npm install
-npm run dev
-```
-
-**Terminal 3 - Worker:**
-```bash
-cd worker
-npm install
-npm run dev
-```
-
-**Terminal 4 - Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Scaling Workers 📈
-
-### Docker Compose
-
-Scale to 5 workers:
-```bash
-docker-compose up -d --scale worker=5
-```
-
-### Kubernetes
-
-Deploy with auto-scaling:
-```bash
-kubectl apply -f k8s/
-```
-
-### Railway/Render
-
-Configure replicas in dashboard or via config file.
-
-## Configuration ⚙️
-
-### Worker Concurrency
-
-Adjust jobs processed simultaneously per worker:
-
-```bash
-# Light load (< 100 repos)
-WORKER_CONCURRENCY=3
-
-# Medium load (100-500 repos)
+REDIS_HOST=redis
+REDIS_PORT=6379
+MONGODB_URI=same_as_main
 WORKER_CONCURRENCY=5
-
-# Heavy load (500+ repos)
-WORKER_CONCURRENCY=10
 ```
 
-### Queue Configuration
+### 4. Access karo
+- Frontend: http://localhost:3001
+- API: http://localhost:3000
 
-Edit `worker/src/config/queue.ts`:
+## Production Deployment 🌐
 
-```typescript
-defaultJobOptions: {
-  attempts: 3,
-  backoff: {
-    type: 'exponential',
-    delay: 2000,
-  },
-}
-```
+**Sabse easy:** Railway.app (free tier available)
+**Best for Azure:** App Service + Blob Storage
 
-## Deployment 🚀
+Complete guide: [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-### Railway (Recommended)
+### Quick Deploy to Railway:
+1. Railway.app pe account banao
+2. GitHub repo connect karo
+3. 4 services add karo: Redis, Main, Worker, Frontend
+4. Environment variables set karo
+5. Deploy! ✨
 
-1. Connect GitHub repository
-2. Create services: Redis, Main, Worker, Frontend
-3. Configure environment variables
-4. Deploy automatically with Nixpacks
+**URLs automatically mil jayengi:**
+- Example: `kurser-api.railway.app`
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+## Azure Storage Setup (Optional but Recommended)
 
-### Render
-
-1. Create `render.yaml` (included)
-2. Connect repository
-3. Services auto-deploy
-
-### Docker/VPS
+Agar aap large repositories clone kar rahe ho, to Azure Blob Storage use karo:
 
 ```bash
-# Clone on server
-git clone https://github.com/yourusername/kurser.git
-cd kurser
+# Storage account banao
+az storage account create --name kurserdata --resource-group kurser-rg
 
-# Configure environment
-cp main/.env.example main/.env
-cp worker/.env.example worker/.env
-# Edit .env files
-
-# Deploy
-docker-compose up -d --build
-
-# Scale workers
-docker-compose up -d --scale worker=5
+# Connection string lo
+az storage account show-connection-string --name kurserdata
 ```
 
-## Monitoring 📊
-
-### Queue Status
-
+Worker .env me add karo:
 ```bash
-# Connect to Redis
-docker exec -it kurser-redis redis-cli
-
-# Check queue depth
-LLEN bull:webhook-events:wait
-LLEN bull:repo-clone:wait
-LLEN bull:repo-analysis:wait
-
-# View all keys
-KEYS bull:*
+AZURE_STORAGE_CONNECTION_STRING=your_connection_string
 ```
 
-### Worker Logs
+## Important URLs
 
-```bash
-# All workers
-docker-compose logs -f worker
+**Website kahan milegi:**
+- Railway: Dashboard me automatic URL milti hai
+- Azure: `https://your-app-name.azurewebsites.net`
+- Vercel: Deploy karne pe URL milti hai
 
-# Specific worker
-docker logs -f kurser-worker-1
-```
-
-### Health Check
-
-```bash
-curl http://localhost:3000/health
-```
-
-## API Endpoints 🔌
-
-### Authentication
-- `GET /auth/github` - Initiate GitHub OAuth
-- `GET /auth/github/callback` - OAuth callback
-- `GET /auth/user` - Get current user
-
-### Repositories
-- `GET /api/repos` - Get user's GitHub repositories
-- `GET /api/repos/tracked` - Get tracked repositories
-- `POST /api/repos/webhook` - Setup webhook for repository
-- `DELETE /api/repos/:repoId/webhook` - Remove webhook
-
-### Webhooks
-- `POST /webhook` - GitHub webhook endpoint
-- `GET /api/webhook/events/:repoId` - Get webhook events
+**GitHub Webhook URL:**
+- Format: `https://your-api-url.com/webhook`
+- Yeh URL GitHub repository settings me dalna hoga
 
 ## Project Structure 📁
 

@@ -6,5 +6,15 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3001
+  },
+  base: './', // Use relative paths for assets - works with any deployment path
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
+    }
   }
 })

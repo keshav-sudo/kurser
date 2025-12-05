@@ -12,7 +12,7 @@ export interface UploadResult {
 
 export class AzureBlobService {
   private containerClient: ContainerClient;
-  private containerName: string = 'deployments';
+  private containerName: string = '$web'; // Use $web for static website hosting
 
   constructor() {
     const connectionString = config.azure.storageConnectionString;
@@ -26,7 +26,7 @@ export class AzureBlobService {
 
   /**
    * Upload entire build directory to Azure Blob
-   * Structure: projects/{projectId}/deploys/{deployId}/*
+   * Structure: username/repo-name/deploy-id/*
    */
   async uploadBuild(
     buildDir: string,
@@ -34,12 +34,13 @@ export class AzureBlobService {
     deployId: string
   ): Promise<UploadResult> {
     try {
-      console.log(`☁️  Uploading build to Azure: projects/${projectId}/deploys/${deployId}`);
+      // Parse projectId as username/repo-name or use as-is
+      const azurePath = `${projectId}/${deployId}`;
+      console.log(`☁️  Uploading build to Azure: ${azurePath}`);
 
       // Ensure container exists
       await this.ensureContainer();
 
-      const azurePath = `projects/${projectId}/deploys/${deployId}`;
       const files = await this.getAllFiles(buildDir);
       
       let uploadedCount = 0;
@@ -89,7 +90,7 @@ export class AzureBlobService {
    */
   async deleteDeployment(projectId: string, deployId: string): Promise<boolean> {
     try {
-      const prefix = `projects/${projectId}/deploys/${deployId}/`;
+      const prefix = `${projectId}/${deployId}/`;
       
       let deletedCount = 0;
       for await (const blob of this.containerClient.listBlobsFlat({ prefix })) {
@@ -109,15 +110,15 @@ export class AzureBlobService {
    * List all deployments for a project
    */
   async listDeployments(projectId: string): Promise<string[]> {
-    const prefix = `projects/${projectId}/deploys/`;
+    const prefix = `${projectId}/`;
     const deployIds = new Set<string>();
 
     try {
       for await (const blob of this.containerClient.listBlobsFlat({ prefix })) {
-        // Extract deployId from path: projects/{projectId}/deploys/{deployId}/...
+        // Extract deployId from path: username/repo-name/deploy-id/...
         const parts = blob.name.split('/');
-        if (parts.length >= 4) {
-          deployIds.add(parts[3]);
+        if (parts.length >= 3) {
+          deployIds.add(parts[2]);
         }
       }
 
