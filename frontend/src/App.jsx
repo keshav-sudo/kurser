@@ -1,176 +1,174 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import './App.css'
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import './App.css';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import Button from './components/Button.jsx';
+import Layout from './components/Layout.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import LiveLogsPage from './pages/LiveLogsPage.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import RepositoriesPage from './pages/RepositoriesPage.jsx';
+import logger from './utils/logger.js';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '')
-  const [user, setUser] = useState(null)
-  const [repos, setRepos] = useState([])
-  const [trackedRepos, setTrackedRepos] = useState([])
-  const [webhookEvents, setWebhookEvents] = useState([])
-  const [selectedRepo, setSelectedRepo] = useState('')
-  const [selectedRepoId, setSelectedRepoId] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+function Home() {
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [user, setUser] = useState(null);
+  const [repos, setRepos] = useState([]);
+  const [trackedRepos, setTrackedRepos] = useState([]);
+  const [webhookEvents, setWebhookEvents] = useState([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
+  const [selectedRepoId, setSelectedRepoId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
+  // Token handling moved to main App component
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlToken = urlParams.get('token')
-    if (urlToken) {
-      setToken(urlToken)
-      localStorage.setItem('token', urlToken)
-      window.history.replaceState({}, '', '/')
+    // Check for token in localStorage if not in state
+    if (!token) {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        setToken(storedToken);
+      }
     }
-  }, [])
+  }, [token]);
 
   useEffect(() => {
     if (token) {
-      fetchProfile()
+      fetchProfile();
     }
-  }, [token])
+  }, [token]);
 
   const showMessage = (msg) => {
-    setMessage(msg)
-    setTimeout(() => setMessage(''), 5000)
-  }
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 5000);
+  };
 
   const fetchProfile = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const res = await axios.get(`${API_BASE}/auth/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setUser(res.data)
-      showMessage('Profile loaded successfully!')
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(res.data);
+      showMessage('Profile loaded successfully!');
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchRepos = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const res = await axios.get(`${API_BASE}/repos`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setRepos(res.data.repos)
-      showMessage('Repositories loaded!')
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRepos(res.data.repos);
+      showMessage('Repositories loaded!');
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchTrackedRepos = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const res = await axios.get(`${API_BASE}/repos/tracked`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setTrackedRepos(res.data.repos)
-      showMessage('Tracked repositories loaded!')
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTrackedRepos(res.data.repos);
+      showMessage('Tracked repositories loaded!');
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const setupWebhook = async () => {
     if (!selectedRepo) {
-      showMessage('Please select a repository')
-      return
+      showMessage('Please select a repository');
+      return;
     }
     try {
-      setLoading(true)
-      const res = await axios.post(
-        `${API_BASE}/repos/webhook`,
-        { repoFullName: selectedRepo },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      showMessage('Webhook configured successfully!')
-      setSelectedRepo('')
-      fetchTrackedRepos()
+      setLoading(true);
+      await axios.post(`${API_BASE}/repos/webhook`, { repoFullName: selectedRepo }, { headers: { Authorization: `Bearer ${token}` } });
+      showMessage('Webhook configured successfully!');
+      setSelectedRepo('');
+      fetchTrackedRepos();
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const removeWebhook = async (repoId) => {
     try {
-      setLoading(true)
-      await axios.delete(`${API_BASE}/repos/webhook/${repoId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      showMessage('Webhook removed successfully!')
-      fetchTrackedRepos()
+      setLoading(true);
+      await axios.delete(`${API_BASE}/repos/webhook/${repoId}`, { headers: { Authorization: `Bearer ${token}` } });
+      showMessage('Webhook removed successfully!');
+      fetchTrackedRepos();
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchWebhookEvents = async () => {
     if (!selectedRepoId) {
-      showMessage('Please select a tracked repository')
-      return
+      showMessage('Please select a tracked repository');
+      return;
     }
     try {
-      setLoading(true)
-      const res = await axios.get(`${API_BASE}/webhook/events/${selectedRepoId}?limit=20`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      setWebhookEvents(res.data.events)
-      showMessage('Webhook events loaded!')
+      setLoading(true);
+      const res = await axios.get(`${API_BASE}/webhook/events/${selectedRepoId}?limit=20`, { headers: { Authorization: `Bearer ${token}` } });
+      setWebhookEvents(res.data.events);
+      showMessage('Webhook events loaded!');
     } catch (err) {
-      showMessage('Error: ' + (err.response?.data?.error || err.message))
+      showMessage('Error: ' + (err.response?.data?.error || err.message));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogin = () => {
-    window.location.href = `${API_BASE}/auth/github`
-  }
+    window.location.href = `${API_BASE}/auth/github`;
+  };
 
   const handleLogout = () => {
-    // Clear all state and storage
-    localStorage.clear()
-    sessionStorage.clear()
-    
-    // Reset all state
-    setToken('')
-    setUser(null)
-    setRepos([])
-    setTrackedRepos([])
-    setWebhookEvents([])
-    setSelectedRepo('')
-    setSelectedRepoId('')
-    setMessage('')
-    
-    // Show logout message
-    showMessage('Logged out successfully. Click "Login with GitHub" to sign in again.')
-  }
+    localStorage.clear();
+    sessionStorage.clear();
+    setToken('');
+    setUser(null);
+    setRepos([]);
+    setTrackedRepos([]);
+    setWebhookEvents([]);
+    setSelectedRepo('');
+    setSelectedRepoId('');
+    setMessage('');
+    showMessage('Logged out successfully. Click "Login with GitHub" to sign in again.');
+  };
 
   const checkHealth = async () => {
     try {
-      setLoading(true)
-      const res = await axios.get(`${API_BASE}/health`)
-      showMessage('API Status: ' + res.data.status + ' ✅')
+      setLoading(true);
+      const res = await axios.get(`${API_BASE}/health`);
+      showMessage('API Status: ' + res.data.status + ' ✅');
     } catch (err) {
-      showMessage('API Error: ' + (err.response?.data?.error || err.message) + ' ❌')
+      showMessage('API Error: ' + (err.response?.data?.error || err.message) + ' ❌');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (!token) {
     return (
@@ -178,19 +176,13 @@ function App() {
         <h1>🚀 Kurser - GitHub Repository Manager</h1>
         <p className="subtitle">Manage your GitHub repositories with automated deployments</p>
         <div className="login-container">
-          <button onClick={handleLogin} className="btn btn-primary">
-            Login with GitHub
-          </button>
-          <button onClick={checkHealth} className="btn btn-secondary" style={{marginLeft: '10px'}}>
-            Check API Health
-          </button>
+          <Button variant="primary" onClick={handleLogin}>Login with GitHub</Button>
+          <Button variant="secondary" onClick={checkHealth} style={{ marginLeft: '10px' }}>Check API Health</Button>
         </div>
         {message && <div className="message">{message}</div>}
-        <div className="info-box">
-          <p><strong>API URL:</strong> {API_BASE}</p>
-        </div>
+        <div className="info-box"><p><strong>API URL:</strong> {API_BASE}</p></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -198,7 +190,9 @@ function App() {
       <h1>🚀 Kurser - GitHub Repository Manager</h1>
       {message && <div className="message">{message}</div>}
       {loading && <div className="loading">⏳ Loading...</div>}
-      
+
+      {/* Navigation removed - handled by Sidebar */}
+
       {/* User Profile */}
       <section>
         <h2>👤 User Profile</h2>
@@ -209,29 +203,24 @@ function App() {
             <p><strong>Email:</strong> {user.email || 'N/A'}</p>
           </div>
         ) : (
-          <button onClick={fetchProfile} className="btn">Load Profile</button>
+          <Button onClick={fetchProfile}>Load Profile</Button>
         )}
-        <button onClick={handleLogout} className="btn btn-danger">Logout</button>
       </section>
 
       {/* Repositories */}
       <section>
         <h2>📦 GitHub Repositories</h2>
-        <button onClick={fetchRepos} className="btn">Load Repositories</button>
+        <Button onClick={fetchRepos}>Load Repositories</Button>
         {repos.length > 0 && (
           <div className="repo-list">
             <p>Found {repos.length} repositories</p>
-            <select 
-              value={selectedRepo} 
-              onChange={(e) => setSelectedRepo(e.target.value)}
-              className="select"
-            >
+            <select value={selectedRepo} onChange={(e) => setSelectedRepo(e.target.value)} className="select">
               <option value="">Select a repository</option>
               {repos.map(repo => (
                 <option key={repo.id} value={repo.full_name}>{repo.full_name}</option>
               ))}
             </select>
-            <button onClick={setupWebhook} className="btn btn-primary">Setup Webhook & Deploy</button>
+            <Button variant="primary" onClick={setupWebhook}>Setup Webhook & Deploy</Button>
           </div>
         )}
       </section>
@@ -239,7 +228,7 @@ function App() {
       {/* Tracked Repositories */}
       <section>
         <h2>✅ Tracked Repositories</h2>
-        <button onClick={fetchTrackedRepos} className="btn">Load Tracked Repos</button>
+        <Button onClick={fetchTrackedRepos}>Load Tracked Repos</Button>
         {trackedRepos.length > 0 && (
           <div className="tracked-list">
             {trackedRepos.map(repo => (
@@ -254,9 +243,7 @@ function App() {
                   <small>Webhook ID: {repo.webhookId}</small>
                   <small>Last Event: {repo.lastWebhookEvent ? new Date(repo.lastWebhookEvent).toLocaleString() : 'N/A'}</small>
                 </div>
-                <button onClick={() => removeWebhook(repo.repoId)} className="btn btn-danger btn-sm">
-                  Remove Webhook
-                </button>
+                <Button variant="danger" onClick={() => removeWebhook(repo.repoId)} className="btn-sm">Remove Webhook</Button>
               </div>
             ))}
           </div>
@@ -267,17 +254,13 @@ function App() {
       <section>
         <h2>📊 Webhook Events & Logs</h2>
         <div className="events-controls">
-          <select 
-            value={selectedRepoId} 
-            onChange={(e) => setSelectedRepoId(e.target.value)}
-            className="select"
-          >
+          <select value={selectedRepoId} onChange={(e) => setSelectedRepoId(e.target.value)} className="select">
             <option value="">Select a tracked repository</option>
             {trackedRepos.map(repo => (
               <option key={repo._id} value={repo.repoId}>{repo.fullName}</option>
             ))}
           </select>
-          <button onClick={fetchWebhookEvents} className="btn">Load Events</button>
+          <Button onClick={fetchWebhookEvents}>Load Events</Button>
         </div>
         {webhookEvents.length > 0 && (
           <div className="events-list">
@@ -302,13 +285,40 @@ function App() {
 
       {/* Health Check */}
       <section>
-        <button onClick={checkHealth} className="btn btn-secondary">Check API Health</button>
-        <div className="info-box">
-          <p><strong>API URL:</strong> {API_BASE}</p>
-        </div>
+        <Button variant="secondary" onClick={checkHealth}>Check API Health</Button>
+        <div className="info-box"><p><strong>API URL:</strong> {API_BASE}</p></div>
       </section>
     </div>
-  )
+  );
 }
 
-export default App
+function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      localStorage.setItem('token', token);
+      // Clear the query param from URL without refreshing
+      window.history.replaceState({}, document.title, window.location.pathname);
+      navigate('/dashboard');
+    }
+  }, [location, navigate]);
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/home" element={<Layout><Home /></Layout>} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
+      <Route path="/repositories" element={<Layout><RepositoriesPage /></Layout>} />
+      <Route path="/logs" element={<Layout><LiveLogsPage /></Layout>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default App;

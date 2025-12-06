@@ -1,0 +1,165 @@
+.login-container-split {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background: var(--bg-dark);
+    overflow: hidden;
+}
+
+.login-brand-section {
+    flex: 1;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-brand-section::before {
+    content: '';
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(circle, var(--primary-glow) 0%, transparent 60%);
+    opacity: 0.1;
+    animation: float 10s ease-in-out infinite;
+}
+
+.brand-content {
+    z-index: 1;
+    text-align: center;
+    color: white;
+    padding: 40px;
+}
+
+.brand-logo {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 30px;
+    position: relative;
+}
+
+.logo-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: var(--primary-color);
+    border-right-color: var(--secondary-color);
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+
+.brand-content h1 {
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #fff, #a1a1aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-content p {
+    font-size: 18px;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+}
+
+.brand-features {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.feature-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.login-form-section {
+    flex: 0 0 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: var(--bg-dark);
+    position: relative;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h2 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.login-header p {
+    color: var(--text-muted);
+}
+
+.login-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.github-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+}
+
+.arrow-icon {
+    margin-left: auto;
+    opacity: 0.7;
+}
+
+.login-footer {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+    .login-container-split {
+        flex-direction: column;
+    }
+
+    .login-brand-section {
+        flex: 0 0 200px;
+    }
+
+    .brand-content h1 {
+        font-size: 32px;
+    }
+
+    .brand-logo,
+    .brand-features {
+        display: none;
+    }
+
+    .login-form-section {
+        flex: 1;
+        width: 100%;
+    }
+}

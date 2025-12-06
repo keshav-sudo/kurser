@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AuthRequest } from '../middleware/auth.js';
 import { Repository } from '../models/Repository.js';
 import { User } from '../models/User.js';
+import { Deployment } from '../models/Deployment.js';
 import { config } from '../config/env.js';
 import { addRepoCloneJob } from '../config/bullmq.js';
 
@@ -26,8 +27,31 @@ export const getTrackedRepos = async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user;
     const repos = await Repository.find({ userId: user._id }).sort({ updatedAt: -1 });
-    res.json({ repos });
+    
+    // Fetch latest deployment for each repository
+    const reposWithDeployments = await Promise.all(
+      repos.map(async (repo) => {
+        const latestDeployment = await Deployment.findOne({ 
+          projectId: repo._id,
+          status: 'ready'
+        }).sort({ createdAt: -1 });
+        
+        return {
+          ...repo.toObject(),
+          latestDeployment: latestDeployment ? {
+            deployId: latestDeployment.deployId,
+            previewUrl: latestDeployment.previewUrl,
+            status: latestDeployment.status,
+            createdAt: latestDeployment.createdAt,
+            isLatest: latestDeployment.isLatest
+          } : null
+        };
+      })
+    );
+    
+    res.json({ repos: reposWithDeployments });
   } catch (error) {
+    console.error('Error fetching tracked repos:', error);
     res.status(500).json({ error: 'Failed to fetch tracked repositories' });
   }
 };

@@ -1,0 +1,30 @@
+.live-logs-page {
+    padding: 1rem;
+    background: var(--background-gradient, #f0f4f8);
+}
+
+.live-logs-page h2 {
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    color: var(--primary-color, #333);
+}
+
+.logs-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #111;
+    color: #0f0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.log-line {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.error-text {
+    color: #ff5555;
+    margin-bottom: 0.5rem;
+}

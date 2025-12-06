@@ -1,0 +1,60 @@
+.input-container {
+    position: relative;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.input-container.focused {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.input-label {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    color: var(--text-muted);
+    font-size: 16px;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+.input-container.focused .input-label,
+.input-field:not([value=""])+.input-highlight+.input-label,
+/* This selector is tricky with React value prop, relying on container class */
+.input-container .input-field:not(:placeholder-shown)~.input-label,
+/* Fallback */
+.input-container.focused .input-label {
+    top: 6px;
+    font-size: 12px;
+    color: var(--primary-color);
+}
+
+/* Since we toggle 'focused' class on container based on value presence in React, we can simplify */
+.input-container.focused .input-label {
+    top: 6px;
+    font-size: 12px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 24px 16px 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 16px;
+    outline: none;
+    font-family: var(--font-family);
+}
+
+.input-field::placeholder {
+    color: transparent;
+}
+
+.input-container.focused .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+}

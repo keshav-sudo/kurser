@@ -87,17 +87,37 @@ export class BuildService {
         buildLog += `[BUILD WARNINGS]\n${buildResult.stderr}\n`;
       }
 
-      // Verify build output exists
-      const buildDir = path.join(this.repoPath, this.outputDir);
-      const buildExists = await this.directoryExists(buildDir);
+      // Detect and verify build output directory
+      const buildDir = await this.findBuildOutput();
       
-      if (!buildExists) {
-        throw new Error(`Build directory '${this.outputDir}' not found after build`);
+      if (!buildDir) {
+        // List ALL directories to help debug (including hidden ones)
+        const repoContents = await fs.readdir(this.repoPath);
+        const allDirs = [];
+        for (const item of repoContents) {
+          const itemPath = path.join(this.repoPath, item);
+          try {
+            const stat = await fs.stat(itemPath);
+            if (stat.isDirectory() && item !== 'node_modules') {
+              allDirs.push(item);
+            }
+          } catch (e) {
+            // Skip if can't stat
+          }
+        }
+        
+        throw new Error(
+          `Could not find build output directory.\n` +
+          `Searched for: ${this.outputDir}\n` +
+          `All directories found: ${allDirs.join(', ')}\n` +
+          `Tip: For Next.js, add "output: 'export'" to next.config.js for static builds.`
+        );
       }
 
       const buildTime = Math.floor((Date.now() - startTime) / 1000);
       
       console.log(`✅ Build completed in ${buildTime}s`);
+      console.log(`   Output directory: ${buildDir}`);
 
       return {
         success: true,
@@ -129,6 +149,56 @@ export class BuildService {
     }
   }
 
+  /**
+   * Smart detection of build output directory
+   * Tries multiple common locations and returns the first one that exists
+   */
+  async findBuildOutput(): Promise<string | null> {
+    // Common build output directories to check (order matters - more specific first)
+    const possibleDirs = [
+      this.outputDir, // User-specified or detected
+      'out',          // Next.js static export
+      '.next',        // Next.js default (server mode)
+      'dist',         // Vite, Angular, Vue
+      'build',        // CRA, some React setups
+      'public',       // Gatsby, some static sites
+      '.output/public', // Nuxt 3
+      'dist/public',  // Some Angular configs
+      'public/build', // Svelte
+    ];
+
+    // Remove duplicates while preserving order
+    const uniqueDirs = Array.from(new Set(possibleDirs));
+
+    console.log(`🔍 Searching for build output...`);
+    console.log(`   Primary target: ${this.outputDir}`);
+
+    for (const dir of uniqueDirs) {
+      const fullPath = path.join(this.repoPath, dir);
+      console.log(`   Checking: ${dir}`);
+      
+      if (await this.directoryExists(fullPath)) {
+        try {
+          // Check if directory has files
+          const files = await fs.readdir(fullPath);
+          if (files.length > 0) {
+            console.log(`   ✅ Found build output: ${dir} (${files.length} items)`);
+            return fullPath;
+          } else {
+            console.log(`   ⚠️  Directory exists but is empty: ${dir}`);
+          }
+        } catch (e) {
+          console.log(`   ⚠️  Could not read directory: ${dir}`);
+        }
+      } else {
+        console.log(`   ❌ Not found: ${dir}`);
+      }
+    }
+
+    console.log(`   ❌ No build output found in any checked location`);
+    return null;
+  }
+
   async detectFramework(): Promise<string> {
     try {
       const packageJsonPath = path.join(this.repoPath, 'package.json');
@@ -144,10 +214,35 @@ export class BuildService {
       if (deps['@angular/core']) return 'angular';
       if (deps['vue']) return 'vue';
       if (deps['svelte']) return 'svelte';
+      if (deps['nuxt']) return 'nuxt';
+      if (deps['gatsby']) return 'gatsby';
       
       return 'unknown';
     } catch {
       return 'unknown';
+    }
+  }
+
+  async detectNextJsConfig(): Promise<{ hasOutput: boolean; outputType: string }> {
+    try {
+      const nextConfigPath = path.join(this.repoPath, 'next.config.js');
+      const nextConfigMjsPath = path.join(this.repoPath, 'next.config.mjs');
+      
+      let configContent = '';
+      if (await this.fileExists(nextConfigPath)) {
+        configContent = await fs.readFile(nextConfigPath, 'utf-8');
+      } else if (await this.fileExists(nextConfigMjsPath)) {
+        configContent = await fs.readFile(nextConfigMjsPath, 'utf-8');
+      }
+      
+      // Check if static export is configured
+      if (configContent.includes('output:') && configContent.includes('export')) {
+        return { hasOutput: true, outputType: 'export' };
+      }
+      
+      return { hasOutput: false, outputType: 'default' };
+    } catch {
+      return { hasOutput: false, outputType: 'default' };
     }
   }
 
@@ -175,19 +270,28 @@ export class BuildService {
 
     // Framework-specific configs
     const configs: Record<string, any> = {
-      'next': { buildCommand: `${buildPrefix} build`, outputDir: 'out' },
+      'next': { buildCommand: `${buildPrefix} build`, outputDir: '.next' },
       'vite': { buildCommand: `${buildPrefix} build`, outputDir: 'dist' },
       'create-react-app': { buildCommand: `${buildPrefix} build`, outputDir: 'build' },
       'angular': { buildCommand: `${buildPrefix} build`, outputDir: 'dist' },
       'vue': { buildCommand: `${buildPrefix} build`, outputDir: 'dist' },
       'svelte': { buildCommand: `${buildPrefix} build`, outputDir: 'public/build' },
+      'nuxt': { buildCommand: `${buildPrefix} build`, outputDir: '.output/public' },
+      'gatsby': { buildCommand: `${buildPrefix} build`, outputDir: 'public' },
       'unknown': { buildCommand: `${buildPrefix} build`, outputDir: 'dist' }
     };
 
-    return {
-      ...configs[framework],
-      installCommand
-    };
+    let config = { ...configs[framework], installCommand };
+
+    // Special handling for Next.js - check if static export is configured
+    if (framework === 'next') {
+      const nextConfig = await this.detectNextJsConfig();
+      if (nextConfig.hasOutput && nextConfig.outputType === 'export') {
+        config.outputDir = 'out';
+      }
+    }
+
+    return config;
   }
 
   private async directoryExists(dir: string): Promise<boolean> {

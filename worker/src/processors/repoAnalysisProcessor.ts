@@ -290,28 +290,86 @@ async function detectBuildCommand(repoPath: string): Promise<string> {
 }
 
 async function findDistDirectory(repoPath: string): Promise<string> {
-  const possibleDirs = ['dist', 'build', 'out', 'public'];
+  const possibleDirs = [
+    'out',       // Next.js static export
+    '.next',     // Next.js default build
+    'dist',      // Vite, Angular, Vue
+    'build',     // CRA, some React setups
+    'public',    // Gatsby, some static sites
+    '.output/public', // Nuxt 3
+  ];
+  
+  console.log(`🔍 Searching for build output in: ${possibleDirs.join(', ')}`);
   
   for (const dir of possibleDirs) {
     const fullPath = path.join(repoPath, dir);
+    console.log(`   Checking: ${dir}`);
+    
     try {
       const stats = await fs.stat(fullPath);
       if (stats.isDirectory()) {
-        // Check if it has an index.html
-        const indexPath = path.join(fullPath, 'index.html');
-        try {
-          await fs.access(indexPath);
-          return fullPath;
-        } catch {
-          // No index.html, continue checking
+        // Check if directory has any content
+        const contents = await fs.readdir(fullPath);
+        if (contents.length > 0) {
+          console.log(`   ✅ Found: ${dir} (${contents.length} items)`);
+          
+          // For .next directory, check if it has expected structure
+          if (dir === '.next') {
+            // Check for standalone or server folder - indicates Next.js server build
+            const hasStandalone = contents.includes('standalone');
+            const hasServer = contents.includes('server');
+            const hasStatic = contents.includes('static');
+            
+            if (hasStatic || hasServer || hasStandalone) {
+              console.log(`   ✅ Valid Next.js build directory found`);
+              return fullPath;
+            }
+          }
+          
+          // For other directories, check if has index.html (static sites)
+          const indexPath = path.join(fullPath, 'index.html');
+          try {
+            await fs.access(indexPath);
+            console.log(`   ✅ Has index.html - valid static site`);
+            return fullPath;
+          } catch {
+            // No index.html - might be Next.js or other build
+            // If it's the first directory with content, use it anyway
+            console.log(`   ⚠️  No index.html but has content - using it`);
+            return fullPath;
+          }
+        } else {
+          console.log(`   ⚠️  Directory exists but is empty`);
         }
       }
-    } catch {
-      // Directory doesn't exist
+    } catch (err) {
+      console.log(`   ❌ Not found: ${dir}`);
+      // Directory doesn't exist, continue
     }
   }
   
-  throw new Error('Could not find build output directory');
+  // If nothing found, list what's actually there
+  console.log(`❌ Could not find build output. Listing repository root contents:`);
+  try {
+    const rootContents = await fs.readdir(repoPath);
+    const dirs = [];
+    for (const item of rootContents) {
+      try {
+        const itemPath = path.join(repoPath, item);
+        const stat = await fs.stat(itemPath);
+        if (stat.isDirectory() && item !== 'node_modules') {
+          dirs.push(item);
+        }
+      } catch (e) {
+        // Skip
+      }
+    }
+    console.log(`   Available directories: ${dirs.join(', ')}`);
+  } catch (e) {
+    console.log(`   Could not list directory contents`);
+  }
+  
+  throw new Error('Could not find build output directory. For Next.js, ensure "output: \'export\'" is set in next.config.js for static deployments.');
 }
 
 async function deployToAzure(distDir: string, repoFullName: string): Promise<string> {

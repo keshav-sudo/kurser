@@ -1,0 +1,28 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-dark);
+}
+
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 30px 40px;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+        padding-top: 80px;
+        /* Space for mobile header if we add one */
+    }
+}

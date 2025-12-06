@@ -1,0 +1,15 @@
+.glass-card {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: var(--border-light);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--bg-card-hover);
+}
