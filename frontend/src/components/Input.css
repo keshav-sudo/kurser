@@ -1,16 +1,17 @@
 .input-container {
     position: relative;
     margin-bottom: 24px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    background: var(--gradient-card);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--border-radius-sm);
+    border: var(--border-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-container.focused {
     border-color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    background: var(--bg-card-hover);
+    box-shadow: 0 0 0 4px rgba(62, 214, 195, 0.15), var(--shadow-glow-teal);
 }
 
 .input-label {
@@ -18,35 +19,35 @@
     left: 16px;
     top: 16px;
     color: var(--text-muted);
-    font-size: 16px;
-    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
 
 .input-container.focused .input-label,
 .input-field:not([value=""])+.input-highlight+.input-label,
-/* This selector is tricky with React value prop, relying on container class */
 .input-container .input-field:not(:placeholder-shown)~.input-label,
-/* Fallback */
 .input-container.focused .input-label {
-    top: 6px;
-    font-size: 12px;
+    top: 8px;
+    font-size: 0.75rem;
     color: var(--primary-color);
+    font-weight: 600;
 }
 
-/* Since we toggle 'focused' class on container based on value presence in React, we can simplify */
 .input-container.focused .input-label {
-    top: 6px;
-    font-size: 12px;
+    top: 8px;
+    font-size: 0.75rem;
 }
 
 .input-field {
     width: 100%;
-    padding: 24px 16px 8px;
+    padding: 28px 16px 10px;
     background: transparent;
     border: none;
-    color: var(--text-main);
-    font-size: 16px;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    font-weight: 500;
     outline: none;
     font-family: var(--font-family);
 }
@@ -56,5 +57,23 @@
 }
 
 .input-container.focused .input-field::placeholder {
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--text-dim);
+}
+
+/* Icon support */
+.input-with-icon {
+    padding-left: 44px;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.input-container.focused .input-icon {
+    color: var(--primary-color);
 }

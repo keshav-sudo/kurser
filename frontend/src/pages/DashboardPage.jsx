@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GitBranch, Star, Activity, Plus, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Server, Pause } from 'lucide-react';
+import { GitBranch, Star, Activity, Plus, ArrowUpRight, ArrowDownRight, Clock, CheckCircle, XCircle, Server, Pause, Zap, Gauge } from 'lucide-react';
 import Card from '../components/Card.jsx';
 import Button from '../components/Button.jsx';
+import StatsCard from '../components/StatsCard.jsx';
+import CircularGauge from '../components/CircularGauge.jsx';
+import MountainChart from '../components/MountainChart.jsx';
 import './DashboardPage.css';
 
 const Sparkline = ({ color, data }) => (
@@ -79,7 +82,10 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-container">
+            {/* Atmospheric background effects */}
             <div className="dashboard-bg-glow"></div>
+            <div className="dashboard-glow-orb glow-orb-1"></div>
+            <div className="dashboard-glow-orb glow-orb-2"></div>
 
             <header className="dashboard-header">
                 <div>
@@ -88,41 +94,113 @@ const DashboardPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className="text-gradient"
                     >
-                        Dashboard
+                        Analytics Dashboard
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.1 }}
                     >
-                        Overview of your repositories and deployments
+                        Real-time overview of your deployment ecosystem
                     </motion.p>
                 </div>
                 <Button variant="primary" className="new-repo-btn glow-effect">
                     <Plus size={18} />
-                    <span>Add Repository</span>
+                    <span>New Deployment</span>
                 </Button>
             </header>
 
-            <div className="stats-grid">
-                {stats.map((stat, index) => (
-                    <Card key={index} delay={index * 0.1} className="stat-card ultra-card">
-                        <div className="stat-header">
-                            <div className="stat-icon-wrapper" style={{ '--icon-color': stat.color }}>
-                                <stat.icon size={20} color={stat.color} />
-                            </div>
-                            <div className={`stat-trend ${stat.trendUp ? 'trend-up' : 'trend-down'}`}>
-                                {stat.trendUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                {stat.trend}
-                            </div>
+            {/* Main Analytics Chart */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                <MountainChart 
+                    title="Deployment Analytics Overview" 
+                    height={240}
+                    colors={['#3ED6C3', '#4DD9E8', '#FF8D32']}
+                />
+            </motion.div>
+
+            {/* Stats Grid with Small Cards */}
+            <div className="stats-grid-modern">
+                <StatsCard 
+                    value="0.4/19"
+                    metric="API Response Time"
+                    icon={Zap}
+                    color="#3ED6C3"
+                    delay={0.3}
+                />
+                <StatsCard 
+                    value="3.17°"
+                    metric="System Load"
+                    icon={Activity}
+                    color="#FF8D32"
+                    delay={0.4}
+                />
+                <StatsCard 
+                    value="89%"
+                    metric="Uptime"
+                    icon={CheckCircle}
+                    color="#4DD9E8"
+                    trend="+2%"
+                    delay={0.5}
+                />
+                <StatsCard 
+                    value="27.2°"
+                    metric="Cache Hit Rate"
+                    icon={Server}
+                    color="#3ED6C3"
+                    trend="+5%"
+                    delay={0.6}
+                />
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="main-content-grid">
+                {/* Performance Gauge */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <Card className="gauge-card card-glow-orange">
+                        <h3 className="card-title">System Performance</h3>
+                        <div className="gauge-wrapper">
+                            <CircularGauge 
+                                value={37} 
+                                maxValue={100}
+                                size={180}
+                                strokeWidth={16}
+                                color="#FF8D32"
+                                label="CPU Usage"
+                            />
                         </div>
-                        <div className="stat-body">
-                            <h3>{stat.value}</h3>
-                            <p>{stat.label}</p>
-                        </div>
-                        <Sparkline color={stat.color} data={stat.data} />
                     </Card>
-                ))}
+                </motion.div>
+
+                {/* Repository Stats */}
+                <div className="stats-group">
+                    {stats.map((stat, index) => (
+                        <Card key={index} delay={0.5 + index * 0.1} className="stat-card-compact">
+                            <div className="stat-header-compact">
+                                <div className="stat-icon-wrapper" style={{ '--icon-color': stat.color }}>
+                                    <stat.icon size={18} color={stat.color} />
+                                </div>
+                                <div className={`stat-trend ${stat.trendUp ? 'trend-up' : 'trend-down'}`}>
+                                    {stat.trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                    {stat.trend}
+                                </div>
+                            </div>
+                            <div className="stat-body-compact">
+                                <h3>{stat.value}</h3>
+                                <p>{stat.label}</p>
+                            </div>
+                            <Sparkline color={stat.color} data={stat.data} />
+                        </Card>
+                    ))}
+                </div>
             </div>
 
             <div className="content-grid">

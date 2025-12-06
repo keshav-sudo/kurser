@@ -1,7 +1,7 @@
 .sidebar {
     width: var(--sidebar-width);
     height: 100vh;
-    background: var(--bg-glass);
+    background: var(--bg-sidebar);
     backdrop-filter: var(--glass-blur);
     border-right: var(--border-light);
     display: flex;
@@ -10,7 +10,50 @@
     left: 0;
     top: 0;
     z-index: 100;
+    padding: 24px;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Sidebar stats metrics display */
+.sidebar-metrics {
+    margin-bottom: 32px;
     padding: 20px;
+    background: var(--gradient-card);
+    border-radius: var(--border-radius);
+    border: var(--border-light);
+    box-shadow: var(--shadow-soft);
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.metric-item:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-light);
+}
+
+.metric-percentage {
+    font-size: 0.9rem;
+    color: var(--highlight-orange);
+    font-weight: 600;
+    margin-left: 8px;
 }
 
 .sidebar-header {
@@ -18,57 +61,83 @@
     align-items: center;
     gap: 12px;
     padding: 10px 15px;
-    margin-bottom: 40px;
+    margin-bottom: 48px;
     color: var(--primary-color);
 }
 
 .logo-icon {
-    filter: drop-shadow(0 0 8px var(--primary-glow));
+    filter: drop-shadow(0 0 12px var(--primary-glow));
+    animation: breathe 4s ease-in-out infinite;
 }
 
 .logo-text {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
-    letter-spacing: -0.5px;
-    background: linear-gradient(to right, #fff, #a1a1aa);
+    letter-spacing: -0.8px;
+    background: linear-gradient(135deg, var(--text-light) 0%, var(--primary-color) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     flex: 1;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 15px;
-    border-radius: var(--border-radius);
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: var(--border-radius-sm);
     color: var(--text-muted);
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--gradient-teal);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
 }
 
 .nav-item:hover {
     background: var(--bg-card-hover);
-    color: var(--text-main);
-    transform: translateX(5px);
+    color: var(--text-light);
+    transform: translateX(8px);
+}
+
+.nav-item:hover::before {
+    transform: scaleY(1);
 }
 
 .nav-item.active {
-    background: rgba(59, 130, 246, 0.15);
+    background: var(--gradient-card);
     color: var(--primary-color);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(62, 214, 195, 0.3);
+    box-shadow: var(--shadow-glow-teal);
+}
+
+.nav-item.active::before {
+    transform: scaleY(1);
 }
 
 .sidebar-footer {
     margin-top: auto;
-    padding-top: 20px;
+    padding-top: 24px;
     border-top: var(--border-light);
 }
 
@@ -77,17 +146,20 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 12px 15px;
+    padding: 14px 18px;
     background: transparent;
-    border: none;
-    color: var(--danger-color);
+    border: 1px solid rgba(255, 95, 74, 0.2);
+    color: var(--accent-red);
     cursor: pointer;
-    border-radius: var(--border-radius);
-    font-size: 14px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.95rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .logout-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(255, 95, 74, 0.15);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 20px rgba(255, 95, 74, 0.2);
+    transform: translateY(-2px);
 }
