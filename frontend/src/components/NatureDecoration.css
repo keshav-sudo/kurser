@@ -1,0 +1,47 @@
+.nature-decoration {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 50%;
+    height: 50vh;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.forest-silhouette {
+    width: 100%;
+    height: 100%;
+    opacity: 0.6;
+}
+
+.trees {
+    animation: sway 6s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+@keyframes sway {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(0.5deg);
+    }
+    75% {
+        transform: rotate(-0.5deg);
+    }
+}
+
+/* Fade out on smaller screens */
+@media (max-width: 1024px) {
+    .nature-decoration {
+        opacity: 0.4;
+        width: 40%;
+    }
+}
+
+@media (max-width: 768px) {
+    .nature-decoration {
+        display: none;
+    }
+}

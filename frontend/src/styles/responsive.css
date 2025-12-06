@@ -1,0 +1,143 @@
+/* Responsive design for Neo-Futuristic UI */
+
+/* Tablets and below */
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 240px;
+    }
+
+    .glass-card {
+        padding: 20px;
+    }
+
+    .stats-grid,
+    .stats-grid-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile devices */
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 100%;
+        --header-height: 60px;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    .app {
+        padding: 12px;
+    }
+
+    .nav-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .nav-bar button {
+        margin: 0;
+        width: 100%;
+    }
+
+    .glass-card {
+        padding: 16px;
+        border-radius: var(--border-radius-sm);
+    }
+
+    .stats-grid,
+    .stats-grid-modern {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .content-grid,
+    .main-content-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+
+    .select {
+        min-width: 100%;
+    }
+
+    /* Hide decorative elements on mobile */
+    .dashboard-glow-orb,
+    .nature-decoration {
+        display: none;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    .glass-card {
+        padding: 14px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+
+    .input-field {
+        font-size: 0.9rem;
+    }
+
+    /* Compact stat cards on very small screens */
+    .stat-card-compact {
+        padding: 14px;
+    }
+
+    .stat-body-compact h3 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Large screens optimization */
+@media (min-width: 1440px) {
+    .page-container {
+        max-width: 1600px;
+    }
+
+    .dashboard-container {
+        gap: 40px;
+    }
+}
+
+/* Ultra-wide screens */
+@media (min-width: 1920px) {
+    .page-container {
+        max-width: 1800px;
+    }
+
+    .stats-grid-modern {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .main-content-grid {
+        grid-template-columns: 400px 1fr;
+    }
+}

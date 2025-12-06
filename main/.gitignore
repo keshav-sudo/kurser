@@ -1,0 +1,18 @@
+node_modules
+dist
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+.vercel
+
+# TypeScript compiled files
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+
+# But keep config files
+!*.config.js
+!jest.config.js

@@ -1,0 +1,104 @@
+.mountain-chart-container {
+    width: 100%;
+    padding: 24px;
+    background: var(--gradient-card);
+    border-radius: var(--border-radius-lg);
+    border: var(--border-light);
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+}
+
+.mountain-chart-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(62, 214, 195, 0.08) 0%, transparent 70%);
+    animation: rotateGradient 20s linear infinite;
+    pointer-events: none;
+}
+
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 1;
+}
+
+.mountain-chart {
+    width: 100%;
+    height: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.mountain-area {
+    animation: fadeInArea 1s ease-out forwards;
+    opacity: 0;
+}
+
+.mountain-line {
+    stroke-dasharray: 2000;
+    stroke-dashoffset: 2000;
+    animation: drawLine 2s ease-in-out forwards;
+}
+
+.mountain-peak {
+    animation: peakPulse 0.5s ease-out forwards, peakGlow 3s ease-in-out infinite;
+    transform-origin: center;
+    opacity: 0;
+}
+
+@keyframes fadeInArea {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes peakPulse {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes peakGlow {
+    0%, 100% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes rotateGradient {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
